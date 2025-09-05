@@ -1,0 +1,148 @@
+switchtolayout; deleteall;clc;clear;
+
+# Waveguides documentations:
+#     1. https://optics.ansys.com/hc/en-us/articles/360034404754-addwaveguide-Script-command
+
+# Global params:
+longitudinal_length = 50e-6;
+total_width = 5e-6;
+total_height = 2.5e-6;
+wg_angle = 90.0;
+wg_height = 250e-9;
+injection_mode = 1;
+wavelength = 1.55e-6;
+num_freq_points = 1;
+wavelength_span = 0;
+gap = 25e-9;
+
+# Bus waveguide:
+## Parameters:
+width_main_wg = 500e-9;
+base_height_main_wg = wg_height;
+base_angle_main_wg = wg_angle;
+xi_main_wg = -25e-6;
+xf_main_wg = 25e-6;
+yi_main_wg = -width_main_wg/2 - gap/2;
+yf_main_wg = -width_main_wg/2 - gap/2;
+pole_main_wg = [xi_main_wg,yi_main_wg; xf_main_wg,yf_main_wg];
+## Build:
+addwaveguide;
+set("base width", width_main_wg);
+set("base height", base_height_main_wg);
+set("base angle", base_angle_main_wg);
+set("poles", pole_main_wg);
+set("material","Si (Silicon) - Palik");
+set("name", "bus-waveguide");
+
+
+# Baby waveguide:
+## Parameters:
+width_baby_wg = width_main_wg;
+base_height_baby_wg = wg_height;
+base_angle_baby_wg = wg_angle;
+xi_baby_wg = -20e-6;
+xf_baby_wg = 25e-6;
+yi_baby_wg = width_baby_wg/2 + gap/2;
+yf_baby_wg = width_baby_wg/2 + gap/2;
+pole_baby_wg = [xi_baby_wg,yi_baby_wg; xf_baby_wg,yf_baby_wg];
+## Build:
+addwaveguide;
+set("base width", width_baby_wg);
+set("base height", base_height_baby_wg);
+set("base angle", base_angle_baby_wg);
+set("poles", pole_baby_wg);
+set("material","Si (Silicon) - Palik");
+set("name", "bus-waveguide");
+
+
+
+# More Parameters:
+## Monitors:
+#### Bus-waveguide IN:
+monitor_bus_wg_in_x_pos = -25e-6;
+monitor_bus_wg_in_x_pos = 20e-6;
+monitor_bus_wg_y_min = -2*width_main_wg + yi_main_wg;
+monitor_bus_wg_y_max = 2*width_main_wg + yi_main_wg;
+monitor_bus_wg_z_min = -2*wg_height;
+monitor_bus_wg_z_max = 2*wg_height;
+
+#### Bus-waveguide OUT:
+monitor_bus_wg_out_x_pos = 20e-6;
+monitor_bus_wg_y_min = -2*width_main_wg + yi_main_wg;
+monitor_bus_wg_y_max = 2*width_main_wg + yi_main_wg;
+monitor_bus_wg_z_min = -2*wg_height;
+monitor_bus_wg_z_max = 2*wg_height;
+
+
+#### Baby waveguide OUT:
+monitor_baby_wg_out_x_pos = 20e-6;
+monitor_baby_wg_out_y_min = -2*width_baby_wg;
+monitor_baby_wg_out_y_max = 2*width_baby_wg;
+monitor_baby_wg_out_z_min = -2*wg_height;
+monitor_baby_wg_out_z_max = 2*wg_height;
+
+
+# FDTD:
+addfdtd; 
+set("X MIN", -longitudinal_length/2);
+set("X MAX", longitudinal_length/2);
+set("Y MIN", -total_width/2);
+set("Y MAX", total_width/2);
+set("Z MIN", -total_height/2); 
+set("Z MAX", total_height/2);
+set("index", 1); # tentar sem essa linha, deveria funcionar
+set("y min bc","PML"); set("y max bc","PML");
+set("x min bc","PML"); set("x max bc","PML");
+set("z min bc","PML"); set("z max bc","PML");
+set("auto shutoff min",1e-09);
+set("mesh accuracy", 5);
+
+addpower; # Z-slice
+set("name","Z-slice");
+set("monitor type","2D Z-normal");
+set("X MIN", -longitudinal_length/2);
+set("X MAX", longitudinal_length/2);
+set("Y MIN", -total_width/2);
+set("Y MAX", total_width/2);
+set("z", 0);
+
+addpower; ##### 
+set("name", "out-bus-wg");
+set("monitor type", "2D X-normal");
+set("Y MIN", monitor_bus_wg_y_min);
+set("Y MAX", monitor_bus_wg_y_max);
+set("Z MIN", monitor_bus_wg_z_min); 
+set("Z MAX", monitor_bus_wg_z_max);
+set("X", monitor_bus_wg_out_x_pos);
+
+
+addpower; ##### monitor out baby wg 
+set("name","out-baby-wg");
+set("monitor type", "2D X-normal");
+set("Y MIN", monitor_baby_wg_out_y_min);
+set("Y MAX", monitor_baby_wg_out_y_max);
+set("Z MIN", monitor_baby_wg_out_z_min); 
+set("Z MAX", monitor_baby_wg_out_z_max);
+set("X", monitor_bus_wg_out_x_pos);
+
+addport; # INPUT-Port
+set("name","Input"); 
+set("direction","Forward"); 
+set("injection axis","x-axis"); 
+set("mode selection", injection_mode); 
+set("injection axis", "x-axis"); 
+set("x",-25e-6);
+set("Y MIN", monitor_bus_wg_y_min);
+set("Y MAX", monitor_bus_wg_y_max);
+set("Z MIN", monitor_bus_wg_z_min); 
+set("Z MAX", monitor_bus_wg_z_max);
+
+select("FDTD::ports"); # select the port group
+set("source port", "Input");
+set("source mode", "mode 1");
+set("monitor frequency points", num_freq_points);
+
+setglobalsource("center wavelength", wavelength);
+setglobalsource("wavelength span", wavelength_span);
+
+run;

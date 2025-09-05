@@ -26,7 +26,8 @@ files = [
     "./dados/coupling_constants_gap_10_1500nm_150pts_sol21.csv"
 ]
 
-files = ["./dados/coupling_constants_gap_10_1500nm_150pts_sol11.csv"]
+files = ["../../comsol/cmt/cmt_TE0_TE0_guias_identicos_sol22_mais_gaps.csv"]
+files = ["../../comsol/cmt/cmt_TM0-TM0_guias_identicos_sol11.csv"]
 
 dfs = []
 for f in files:
@@ -38,7 +39,7 @@ plot = False
 
 
 for df in dfs:
-    neff = 2.404163420507527
+    neff = 1.4988027009900051 # 
     neff_tol = 1e-4
     df = df[(neff - neff_tol < df.neff.values.real) & (df.neff.values.real < neff + neff_tol)]
     gaps = df.gap.values
@@ -70,12 +71,10 @@ for df in dfs:
         print(args)
         fargs = solve_cmt_odes.calc_params(delta, k12, k21, c12, c21, chi1, chi2)
 
-
-
         # Spatial coordinates:
         t0 = 0.0 # meters.
-        tf = 200e-6 # meters.
-        num_points = int(1e4)
+        tf = 50e-6 * gap/20e-9 # USE THIS FOR THE TE0 mode: np.exp(gap/100e-9) # meters.
+        num_points = int(1e5)
         tt = np.linspace(t0, tf, num_points)
         dt = (tf - t0) / num_points
 
@@ -102,8 +101,8 @@ for df in dfs:
         print("Coupling length = ", Lc[-1]*1e6, " micrometers.")
 
         if plot:
-            plt.plot(tt*1e6, np.abs(AA)**2, 'b', label='$P_A$')
-            plt.plot(tt*1e6, np.abs(BB)**2, 'g', label='$P_B$')
+            plt.plot(tt*1e6, np.abs(AA[:len(tt)])**2, 'b', label='$P_A$')
+            plt.plot(tt*1e6, np.abs(BB[:len(tt)])**2, 'g', label='$P_B$')
             plt.legend(loc='best')
             plt.ylabel("P (normalized power)")
             plt.xlabel('$z$' + ' [$\\mu$m]')
@@ -112,21 +111,24 @@ for df in dfs:
 
     Lc = np.array(Lc)
 
-plt.loglog(gaps*1e9, kappa_12.real, label="$\\kappa_{12}$")
-plt.loglog(gaps*1e9, c_butt_12.real, label="$c_{12}$")
-plt.loglog(gaps*1e9, chi11, label="$\\chi_{11}$")
+plt.loglog(gaps*1e9, kappa_12.real, label="real[$\\kappa_{12}$]")
+plt.loglog(gaps*1e9, c_butt_12.real, label="real[$c_{12}$]")
+plt.loglog(gaps*1e9, chi11, label="real[$\\chi_{11}$]")
+plt.xlim(10, 1e3)
 plt.xlabel("gap [nm]")
 plt.ylabel("Coupling constants")
 plt.minorticks_on()
 plt.grid(which="both")
 plt.legend()
-plt.savefig("TE_TE_identical_wg_coupling_constants.pdf")
+plt.savefig("TM_TM_identical_wg_coupling_constants.pdf")
 plt.show()
 
 plt.loglog(gaps*1e9, Lc*1e6)
+plt.xlim(10, 1e3)
+plt.ylim(1, 1e4)
 plt.xlabel("gap [nm]")
 plt.ylabel("Coupling length [$\\mu$m]")
 plt.minorticks_on()
 plt.grid(which="both")
-plt.savefig("TE_TE_identical_wg_Lc_vs_gap.pdf")
+plt.savefig("TM_TM_identical_wg_Lc_vs_gap.pdf")
 plt.show()
