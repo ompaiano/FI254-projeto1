@@ -35,7 +35,7 @@ for f in files:
 
 # print(df11.columns)
 
-plot = False
+plot = True
 
 
 for df in dfs:
@@ -98,7 +98,7 @@ for df in dfs:
 
         Lc.append(cmt.calc_coupling_length(tt, np.abs(AA)**2, np.abs(BB)**2, eta=.5))
 
-        print("Coupling length = ", Lc[-1]*1e6, " micrometers.")
+        print("Coupling length = ", Lc[-1]*1e6, " micrometers. \nGap = ", gap, "nm.")
 
         if plot:
             plt.plot(tt*1e6, np.abs(AA[:len(tt)])**2, 'b', label='$P_A$')
